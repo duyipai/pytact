@@ -1,6 +1,7 @@
 from typing import List
 from .sensors import Sensor
 from .gelsight import GelsightR15
+from .digit import DigitV2
 
 def get_sensor_names() -> List[str]:
     """
@@ -8,7 +9,8 @@ def get_sensor_names() -> List[str]:
 
     These will all be valid inputs to sensor_from_args().
     """
-    return ["GelsightR15"]
+    return ["GelsightR15", "DigitV2"]
+
 
 def sensor_from_args(sensor_name: str, **kwargs) -> Sensor:
     """
@@ -18,12 +20,12 @@ def sensor_from_args(sensor_name: str, **kwargs) -> Sensor:
     ----------
     sensor_name: str
         Sensor type to be created. Valid inputs are listed in get_sensor_names().
-    """ 
-    
+    """
+
     if sensor_name == "GelsightR15":
-        if "url" not in kwargs or kwargs["url"] is None:
-            raise KeyError("Missing required argument 'url' for GelsightR15")
-        
+        # if "url" not in kwargs or kwargs["url"] is None:
+        #     raise KeyError("Missing required argument 'url' for GelsightR15")
+
         if "roi" in kwargs and kwargs["roi"] is not None:
             def parse_coord(coord: str):
                 x, y = coord.split(',')
@@ -32,6 +34,8 @@ def sensor_from_args(sensor_name: str, **kwargs) -> Sensor:
                    parse_coord(kwargs["roi"][2]), parse_coord(kwargs["roi"][3])]
             return GelsightR15(kwargs["url"], roi=roi)
         else:
-            return GelsightR15(kwargs["url"])
+            return GelsightR15()
+    elif sensor_name == "DigitV2":
+        return DigitV2()
     else:
         raise ValueError(f"Sensor name not recognized: {sensor_name}")
