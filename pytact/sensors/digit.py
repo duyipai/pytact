@@ -42,7 +42,6 @@ class DigitV2(Sensor):
         self._is_running: bool = True
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None
-        threading.Timer(1.0 / self._sample_rate, self._collect_frame).start()
 
     def __del__(self):
         if self._sensor is not None:
@@ -60,18 +59,12 @@ class DigitV2(Sensor):
     def set_reference(self, frame: Frame):
         self._ref = deepcopy(frame)
 
-    def _collect_frame(self):
-        """Runs at predetermined rate to collect frames from the sensor."""
-        frame = self._sensor.get_frame()
-
-        self._frame = Frame(self._encoding, frame)
-
-        # Set reference frame if one isn't set
-        if self._ref is None:
-            self._ref = deepcopy(self._frame)
-
     def get_frame(self) -> Optional[Frame]:
         """Returns frame collected in the last sample."""
+        frame = self._sensor.get_frame()
+        self._frame = Frame(self._encoding, frame)
+        if self._ref is None:
+            self._ref = deepcopy(self._frame)
         return deepcopy(self._frame)
 
     def is_running(self):
