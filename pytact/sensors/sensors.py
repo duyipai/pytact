@@ -40,3 +40,6 @@ class Sensor(ABC):
     """ Optional methods """
     def get_markers(self) -> Optional[Markers]:
         raise NotImplementedError()
+
+    def get_markers_from_frame(self, frame) -> Optional[Markers]:
+        raise NotImplementedError()

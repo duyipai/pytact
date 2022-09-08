@@ -1,4 +1,3 @@
-import cv2
 import threading
 from typing import Optional, List
 from copy import deepcopy
@@ -64,8 +63,6 @@ class DigitV2(Sensor):
         """Runs at predetermined rate to collect frames from the sensor."""
         frame = self._sensor.get_frame()
 
-        # Convert frame to RGB
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self._frame = Frame(self._encoding, frame)
 
         # Set reference frame if one isn't set
@@ -90,6 +87,6 @@ class DigitV2(Sensor):
                 (frame.image.astype("float32") * self._diff_intensity)
                 - self._ref.image.astype("float32")
             ) * self._diff_intensity  # use float image now
-            return Frame(frame.encoding, image)
+            return Frame(FrameEnc.DIFF, image)
         else:
             raise UnsupportedModelError(f"Digit: model not supported: {model}")

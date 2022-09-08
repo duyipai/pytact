@@ -11,6 +11,7 @@ class FrameEnc(Enum):
     """Supported encodings for frames"""
     BGR = 1 # 3 channels in blue, green, red order
     GRAY = 2 # 1 channel
+    DIFF = 3 # 1 channel float, allow negative, difference between current and reference frame
 
 @dataclass
 class Frame:

@@ -37,27 +37,37 @@ class GelsightR15(Sensor):
     """
 
     _encoding = FrameEnc.BGR
-    _size: Tuple[int, int] = (120, 160) # width, height
-    _roi: Optional[List[Tuple[int, int]]] = None
+    _size: Tuple[int, int] = (120, 160)  # width, height
+    _roi: Optional[List[Tuple[int, int]]] = [
+        [95, 135],
+        [360, 130],
+        [340, 470],
+        [130, 470],
+    ]  # TL, TR, BR, BL
     _sample_rate: float = 30.0
     _diff_intensity: float = 3.0
-    
-    _marker_shape: Tuple[int, int] = (10, 12) # rows, cols
-    _marker_block_size: int = 17
-    _marker_neg_bias: int = 25
-    _marker_neighborhood_size: int = 20
 
-    def __init__(self, url: str, **kwargs):
+    _marker_shape: Tuple[int, int] = (10, 14)  # rows, cols
+    _marker_block_size: int = 51
+    _marker_neg_bias: int = 19
+    _marker_neighborhood_size: int = 33
+
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._dev = cv2.VideoCapture(url)
-        self.output_coords = [(0, 0), (self._size[1], 0), (self._size[1], self._size[0]), (0, self._size[0])]
-        
-        # Start frame sampling 
-        self._is_running: bool = True 
+        # self._dev = cv2.VideoCapture(url)
+        self.output_coords = [
+            (0, 0),
+            (self._size[1], 0),
+            (self._size[1], self._size[0]),
+            (0, self._size[0]),
+        ]
+
+        # Start frame sampling
+        self._is_running: bool = True
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None
-        threading.Timer(1.0/self._sample_rate, self._collect_frame).start()
+        threading.Timer(1.0 / self._sample_rate, self._collect_frame).start()
 
     @property
     def marker_shape(self) -> Tuple[int, int]:
@@ -80,11 +90,10 @@ class GelsightR15(Sensor):
         # Warp to match ROI
         if self._roi is not None:
             M = cv2.getPerspectiveTransform(
-                np.float32(self._roi), np.float32(self.output_coords))
+                np.float32(self._roi), np.float32(self.output_coords)
+            )
             frame = cv2.warpPerspective(frame, M, self._size)
 
-        # Convert frame to RGB
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         self._frame = Frame(self._encoding, frame)
 
         # Set reference frame if one isn't set
@@ -103,28 +112,35 @@ class GelsightR15(Sensor):
             if self._ref is None:
                 self._ref = deepcopy(frame)
                 if self._ref is None:
-                    raise RuntimeError(f"GelsightR15: unable to copy frame")
-            
-            image = ((frame.image * 1.0) - self._ref.image) * self._diff_intensity
-            image[image > 255] = 255
-            image[image < 0] = 0
-            image = np.uint8(image)
-            return Frame(frame.encoding, image)
+                    raise RuntimeError("GelsightR15: unable to copy frame")
+
+            image = (
+                (frame.image.astype("float32") * self.diff_intensity)
+                - self._ref.image.astype("float32")
+            ) * self._diff_intensity  # use float image now
+            return Frame(FrameEnc.DIFF, image)
         else:
-            raise UnsupportedModelError(f"GelsightR15: model not supported: {model}")
+            raise UnsupportedModelError("GelsightR15: model not supported: {model}")
 
     def get_markers(self) -> Optional[Markers]:
         if self._frame is None:
             return None
-        
-        # Convert to grayscale and compute mask 
+
+        # Convert to grayscale and compute mask
         if self._frame.encoding == FrameEnc.BGR:
             gray_im = cv2.cvtColor(self._frame.image, cv2.COLOR_BGR2GRAY)
-        elif self._frame.encoding != FrameEnc.GRAY:
+        elif self._frame.encoding == FrameEnc.GRAY:
             gray_im = self._frame.image
-
-        mask = cv2.adaptiveThreshold(gray_im, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY_INV, self._marker_block_size, self._marker_neg_bias)
+        else:
+            raise ValueError("GelsightR15: invalid frame encoding")
+        mask = cv2.adaptiveThreshold(
+            gray_im,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV,
+            self._marker_block_size,
+            self._marker_neg_bias,
+        )
 
         # Find peaks
         max = maximum_filter(mask, self._marker_neighborhood_size)
@@ -138,3 +154,30 @@ class GelsightR15(Sensor):
         xy = np.array(ndimage.center_of_mass(mask, labeled, range(1, n + 1)))
         xy[:, [0, 1]] = xy[:, [1, 0]]
         return Markers(self._marker_shape[0], self._marker_shape[1], xy)
+
+    def get_markers_from_frame(self, frame) -> Optional[Markers]:
+        # Convert to grayscale and compute mask
+        if frame.encoding == FrameEnc.BGR:
+            if frame.image.dtype == np.dtype("uint8"):
+                gray_im = cv2.cvtColor(frame.image, cv2.COLOR_BGR2GRAY)
+            else:
+                gray_im = cv2.cvtColor(np.uint8(frame.image), cv2.COLOR_BGR2GRAY)
+        elif frame.encoding != FrameEnc.GRAY:
+            gray_im = frame.image
+
+        mask = cv2.adaptiveThreshold(
+            gray_im,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV,
+            self._marker_block_size,
+            self._marker_neg_bias,
+        )
+
+        # Find peaks
+        max = maximum_filter(mask, self._marker_neighborhood_size)
+        maxima = mask == max
+        min = minimum_filter(mask, self._marker_neighborhood_size)
+        diff = (max - min) > 1
+        maxima[diff == 0] = 0
+        return maxima, mask
