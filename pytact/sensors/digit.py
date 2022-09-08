@@ -38,6 +38,7 @@ class DigitV2(Sensor):
             self._sensor = None
 
         # Start frame sampling
+        self.has_marker = False
         self._is_running: bool = True
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None

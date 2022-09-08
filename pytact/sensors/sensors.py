@@ -14,6 +14,7 @@ class Sensor(ABC):
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, "_" + k, v)
+        self.has_marker = True
 
     """ Properties """
     @property

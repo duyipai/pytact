@@ -65,6 +65,7 @@ class GelsightR15(Sensor):
 
         # Start frame sampling
         self._is_running: bool = True
+        self.has_marker = True
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None
         threading.Timer(1.0 / self._sample_rate, self._collect_frame).start()
