@@ -9,6 +9,7 @@ from scipy.ndimage.filters import maximum_filter, minimum_filter
 from pytact.types import ModelType, FrameEnc, Frame, Markers
 from .sensors import Sensor, UnsupportedModelError
 
+
 class GelsightR15(Sensor):
     """
     Retrieves images from an http stream and assumes markers are present.
@@ -46,7 +47,7 @@ class GelsightR15(Sensor):
     ]  # TL, TR, BR, BL
     _sample_rate: float = 30.0
     _diff_intensity: float = 3.0
-
+    _dev = None
     _marker_shape: Tuple[int, int] = (10, 14)  # rows, cols
     _marker_block_size: int = 51
     _marker_neg_bias: int = 19
@@ -54,8 +55,8 @@ class GelsightR15(Sensor):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # self._dev = cv2.VideoCapture(url)
+        if "url" in kwargs:
+            self._dev = cv2.VideoCapture(kwargs["url"])
         self.output_coords = [
             (0, 0),
             (self._size[1], 0),
@@ -68,7 +69,8 @@ class GelsightR15(Sensor):
         self.has_marker = True
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None
-        threading.Timer(1.0 / self._sample_rate, self._collect_frame).start()
+        if self._dev is not None:
+            threading.Timer(1.0 / self._sample_rate, self._collect_frame).start()
 
     @property
     def marker_shape(self) -> Tuple[int, int]:
@@ -116,8 +118,7 @@ class GelsightR15(Sensor):
                     raise RuntimeError("GelsightR15: unable to copy frame")
 
             image = (
-                (frame.image.astype("float32") * self.diff_intensity)
-                - self._ref.image.astype("float32")
+                frame.image.astype("float32") - self._ref.image.astype("float32")
             ) * self._diff_intensity  # use float image now
             return Frame(FrameEnc.DIFF, image)
         else:

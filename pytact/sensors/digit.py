@@ -1,4 +1,3 @@
-import threading
 from typing import Optional, List
 from copy import deepcopy
 
@@ -78,8 +77,7 @@ class DigitV2(Sensor):
                     raise RuntimeError("Digit: unable to copy frame")
 
             image = (
-                (frame.image.astype("float32") * self._diff_intensity)
-                - self._ref.image.astype("float32")
+                frame.image.astype("float32") - self._ref.image.astype("float32")
             ) * self._diff_intensity  # use float image now
             return Frame(FrameEnc.DIFF, image)
         else:
