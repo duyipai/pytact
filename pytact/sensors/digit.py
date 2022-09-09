@@ -33,6 +33,7 @@ class DigitV2(Sensor):
                 self._sensor.resolution["height"],
             ]
             self._sample_rate = self._sensor.fps
+            self._resolution_mode = "QVGA"
         else:
             self._sensor = None
 
@@ -53,7 +54,21 @@ class DigitV2(Sensor):
     def set_resolution(self, resolution_mode):
         """resolutin_mode = "QVGA", "VGA" """
         if self._sensor is not None:
+            if resolution_mode not in self._sensor.STEAMS:
+                raise ValueError(
+                    f"Digit: resolution_mode not supported: {resolution_mode}"
+                )
+            self._resolution_mode = resolution_mode
             self._sensor.set_resolution(self._sensor.STEAMS[resolution_mode])
+
+    def set_fps(self, fps):
+        """fps = "15fps", "30fps","60fps" """
+        if self._sensor is not None:
+            if fps not in self._sensor.STREAMS[self._resolution_mode]["fps"]:
+                raise ValueError(f"Digit: fps not supported: {fps}")
+            self._sensor.set_fps(
+                self._sensor.STREAMS[self._resolution_mode]["fps"][fps]
+            )
 
     def set_reference(self, frame: Frame):
         self._ref = deepcopy(frame)
