@@ -43,7 +43,6 @@ def sensor_from_args(sensor_name: str, **kwargs) -> Sensor:
         else:
             return GelsightR15()
     elif sensor_name == "DigitV2":
-        print(kwargs)
         return DigitV2(**kwargs)
     else:
         raise ValueError(f"Sensor name not recognized: {sensor_name}")

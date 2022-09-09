@@ -33,11 +33,11 @@ parser.add_argument(
 parser.add_argument(
     "--ball_radius",
     type=float,
-    default=4.0,
+    default=1.0,
     help="Radius of ball used in data collection (mm)",
 )
 parser.add_argument(
-    "--mmpp", type=float, default=0.1546573039481141, help="Measure of mm per pixel"
+    "--mmpp", type=float, default=0.0487334006, help="Measure of mm per pixel"
 )
 parser.add_argument(
     "--sensor",
@@ -57,7 +57,7 @@ parser.add_argument(
     "--amt-empty",
     type=float,
     dest="amt_empty",
-    default=0.05,
+    default=0.03,
     help="Amount of empty data points to include in dataset",
 )
 args = parser.parse_args()
