@@ -44,9 +44,7 @@ def test(dataloader, model, loss_fn):
 
 
 model_path = args.model_path
-model = pytact.models.Pixel2GradModel(
-    hidden_size=96, dropout_p=0.1, activation=nn.ReLU(inplace=True)
-)
+model = pytact.models.Pixel2GradModel()
 model.load_state_dict(torch.load(model_path))
 model.to(device)
 # Create dataset

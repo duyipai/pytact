@@ -83,6 +83,9 @@ class GelsightR15(Sensor):
     def set_reference(self, frame: Frame):
         self._ref = deepcopy(frame)
 
+    def get_reference(self) -> Optional[Frame]:
+        return deepcopy(self._ref)
+
     def _collect_frame(self):
         """Runs at predetermined rate to collect frames from the sensor."""
         ret, frame = self._dev.read()

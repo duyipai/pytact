@@ -1,9 +1,11 @@
-from typing import Optional, List
 from copy import deepcopy
+from typing import List, Optional
 
-from pytact.types import ModelType, FrameEnc, Frame
-from .sensors import Sensor, UnsupportedModelError
+import cv2
 from digit_interface import Digit
+from pytact.types import Frame, FrameEnc, ModelType
+
+from .sensors import Sensor, UnsupportedModelError
 
 
 class DigitV2(Sensor):
@@ -24,7 +26,7 @@ class DigitV2(Sensor):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if "serial" in kwargs:
+        if "serial" in kwargs and kwargs["serial"] is not None:
             self._serial = kwargs["serial"]
             self._sensor = Digit(self._serial)
             self._sensor.connect()
@@ -76,10 +78,14 @@ class DigitV2(Sensor):
     def get_frame(self) -> Optional[Frame]:
         """Returns frame collected in the last sample."""
         frame = self._sensor.get_frame()
+        frame = cv2.medianBlur(frame, 5)
         self._frame = Frame(self._encoding, frame)
         if self._ref is None:
             self._ref = deepcopy(self._frame)
         return deepcopy(self._frame)
+
+    def get_reference(self) -> Optional[Frame]:
+        return deepcopy(self._ref)
 
     def is_running(self):
         return self.is_running
