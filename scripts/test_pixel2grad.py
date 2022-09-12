@@ -1,10 +1,8 @@
 import argparse
 import numpy as np
-import os
 import pytact
 from torch.utils.data import Dataset
 import pandas as pd
-from datetime import datetime as dt
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -12,24 +10,12 @@ from torch.utils.data import DataLoader
 parser = argparse.ArgumentParser(
     description="Trains a pixel->grad MLP model using dataset from the create_grad_dataset script."
 )
-parser.add_argument("input_path", type=str, help="Path to dataset")
+parser.add_argument("input_path", type=str, help="Path to test dataset")
 parser.add_argument(
-    "--output_path",
+    "model_path",
     type=str,
-    dest="output",
-    default=os.getcwd(),
-    help="Path to save model parameters",
+    help="Path to saved model",
 )
-parser.add_argument(
-    "--train_split",
-    type=float,
-    dest="train_split",
-    default=0.8,
-    help="Percentage of dataset to allocate as training data",
-)
-parser.add_argument("--num_epochs", type=int, dest="num_epochs", default=15)
-parser.add_argument("--batch_size", type=int, dest="batch_size", default=64)
-parser.add_argument("--learning_rate", type=int, dest="learning_rate", default=1e-3)
 parser.add_argument(
     "--device",
     type=str,
@@ -37,29 +23,11 @@ parser.add_argument(
     dest="device",
     default="cuda" if torch.cuda.is_available() else "cpu",
 )
+parser.add_argument("--batch_size", type=int, dest="batch_size", default=64)
 args = parser.parse_args()
 
 # Global parameters
 device = torch.device(args.device)
-
-
-def train(dataloader, model, loss_fn, optimizer):
-    model.train()
-    for batch, (X, y) in enumerate(dataloader):
-        X, y = X.to(device), y.to(device)
-
-        # Compute prediction error
-        pred = model(X)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        # if batch % 100 == 0:
-        #     loss, current = loss.item(), batch * len(X)
-        #     print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
 def test(dataloader, model, loss_fn):
@@ -75,12 +43,12 @@ def test(dataloader, model, loss_fn):
     print(f"Test Error: \n Avg loss: {test_loss:>8f} \n")
 
 
-output_path = args.output
-if not os.path.exists(output_path):
-    print("Output folder doesn't exist, will create it.")
-    os.makedirs(output_path)
-output_file = output_path + f"/model-{dt.now().strftime('%H-%M-%S')}.pth"
-
+model_path = args.model_path
+model = pytact.models.Pixel2GradModel(
+    hidden_size=96, dropout_p=0.1, activation=nn.ReLU(inplace=True)
+)
+model.load_state_dict(torch.load(model_path))
+model.to(device)
 # Create dataset
 class Pixel2GradDataset(Dataset):
     def __init__(self, csv_file, to_gpu=True):
@@ -121,26 +89,11 @@ class Pixel2GradDataset(Dataset):
 
 dataset = Pixel2GradDataset(args.input_path)
 
-train_size = int(len(dataset) * args.train_split)
-test_size = len(dataset) - train_size
-trainset, testset = torch.utils.data.random_split(dataset, [train_size, test_size])
-
-train_dataloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
-test_dataloader = DataLoader(testset, batch_size=args.batch_size)
+test_size = len(dataset)
+test_dataloader = DataLoader(dataset, batch_size=args.batch_size)
 
 # Initiate model and optimizer
-model = pytact.models.Pixel2GradModel(
-    hidden_size=96, dropout_p=0.1, activation=nn.ReLU(inplace=True)
-).to(device)
+
 loss_fn = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-
-# Train model
-epochs = args.num_epochs
-for t in range(epochs):
-    print(f"Epoch {t+1}\n-------------------------------")
-    train(train_dataloader, model, loss_fn, optimizer)
-    test(test_dataloader, model, loss_fn)
+test(test_dataloader, model, loss_fn)
 print("Done!")
-
-torch.save(model.state_dict(), output_file)
