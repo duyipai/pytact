@@ -83,7 +83,7 @@ output_file = output_path + f"/model-{dt.now().strftime('%H-%M-%S')}.pth"
 
 # Create dataset
 class Pixel2GradDataset(Dataset):
-    def __init__(self, csv_file, to_gpu=True):
+    def __init__(self, csv_file, to_gpu=True, normalize=True):
         self.labels = pd.read_csv(csv_file)
         self.to_gpu = to_gpu
         self.X = self.labels.iloc[:, 1:6].to_numpy().astype(np.float32)
@@ -106,6 +106,12 @@ class Pixel2GradDataset(Dataset):
             self.y.min(),
             self.y.max(),
         )
+        self.normalize = normalize
+        if self.normalize:
+            self.mean = self.X.mean(axis=0)
+            self.std = self.X.std(axis=0)
+            self.X = (self.X - self.mean) / self.std
+            print("Dataset mean/std:", self.mean, self.std)
         if self.to_gpu:
             self.X = torch.from_numpy(self.X).to(device)
             self.y = torch.from_numpy(self.y).to(device)

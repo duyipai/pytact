@@ -49,7 +49,7 @@ model.load_state_dict(torch.load(model_path))
 model.to(device)
 # Create dataset
 class Pixel2GradDataset(Dataset):
-    def __init__(self, csv_file, to_gpu=True):
+    def __init__(self, csv_file, to_gpu=True, mean=None, std=None):
         self.labels = pd.read_csv(csv_file)
         self.to_gpu = to_gpu
         self.X = self.labels.iloc[:, 1:6].to_numpy().astype(np.float32)
@@ -72,6 +72,8 @@ class Pixel2GradDataset(Dataset):
             self.y.min(),
             self.y.max(),
         )
+        if mean is not None and std is not None:
+            self.X = (self.X - mean) / std
         if self.to_gpu:
             self.X = torch.from_numpy(self.X).to(device)
             self.y = torch.from_numpy(self.y).to(device)

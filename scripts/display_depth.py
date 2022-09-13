@@ -5,6 +5,8 @@ import numpy as np
 import pytact
 import torch
 
+mean = np.array([4.9695697, 0.8519773, 7.260815, 117.63764, 154.52994]).reshape(1, 5)
+std = np.array([61.233902, 51.013615, 52.47986, 66.005806, 86.951385]).reshape(1, 5)
 parser = argparse.ArgumentParser(description="Display raw sensor images")
 parser.add_argument(
     "sensor",
@@ -55,7 +57,9 @@ parser.add_argument(
 )
 args = parser.parse_args()
 sensor = pytact.sensors.sensor_from_args(args.sensor, **vars(args))
-lookupTable = pytact.tasks.DepthFromLookup(args.model_path, args.device == "cuda")
+lookupTable = pytact.tasks.DepthFromLookup(
+    args.model_path, args.device == "cuda", mean, std
+)
 diff_max = 255
 depth_range = 50.0
 depth_bias = 10.0
