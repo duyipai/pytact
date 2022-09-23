@@ -59,7 +59,11 @@ npzfile = np.load(args.model_path + ".npz")
 mean = npzfile["mean"]
 std = npzfile["std"]
 lookupTable = pytact.tasks.DepthFromLookup(
-    args.model_path + ".pth", args.device == "cuda", mean, std
+    args.model_path + ".pth",
+    args.device == "cuda",
+    mean,
+    std,
+    optimize=args.device != "cuda",
 )
 diff_max = 255
 depth_range = 50.0
@@ -97,7 +101,7 @@ else:  # image input
     while True:
         frame = pytact.types.Frame(pytact.types.FrameEnc.BGR, cv2.imread(imgs[i]))
         cv2.imshow("display", frame.image)
-        diff = sensor.preprocess_for(lookupTable.model.model_type, frame)
+        diff = sensor.preprocess_for(lookupTable.model_type, frame)
         depth = lookupTable(diff)
         # print("Depth min/max:", depth.data.min(), depth.data.max())
         cv2.imshow(

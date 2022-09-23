@@ -1,5 +1,6 @@
 import math
 
+import intel_extension_for_pytorch as ipex
 import numpy as np
 import scipy
 import torch
@@ -70,7 +71,9 @@ class DepthFromLookup(Task):
         Path to model parameters; must match MLPGradModel in models/.
     """
 
-    def __init__(self, model_path: str, use_cuda=False, mean=None, std=None):
+    def __init__(
+        self, model_path: str, use_cuda=False, mean=None, std=None, optimize=False
+    ):
 
         self.model = Pixel2GradModel()
         self.use_cuda = use_cuda
@@ -84,6 +87,8 @@ class DepthFromLookup(Task):
             if self.mean is not None and self.std is not None:
                 self.mean = self.mean.cuda()
                 self.std = self.std.cuda()
+        elif optimize:
+            self.model = ipex.optimize(self.model)
 
     def __call__(self, frame: Frame) -> DepthMap:
         height, width = frame.image.shape[:2]
@@ -99,8 +104,14 @@ class DepthFromLookup(Task):
             X = X.cuda()
         if self.mean is not None and self.std is not None:
             X = (X - self.mean) / self.std
-        grad = self.model(X).cpu()
-        grad = grad.detach().numpy().reshape((height, width, 2))
+        with torch.no_grad():
+            grad = self.model(X).cpu()
+            grad = (
+                grad.detach()
+                .type(torch.FloatTensor)
+                .numpy()
+                .reshape((height, width, 2))
+            )
         dm = poisson_reconstruct(
             grad[:, :, 0], grad[:, :, 1], np.zeros((height, width))
         )
