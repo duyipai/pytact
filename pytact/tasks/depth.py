@@ -74,7 +74,7 @@ class DepthFromLookup(Task):
 
         self.model = Pixel2GradModel()
         self.use_cuda = use_cuda
-        self.model.load_state_dict(torch.load(model_path))
+        self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
         self.model.eval()
         if mean is not None and std is not None:
             self.mean = torch.from_numpy(mean).float()
