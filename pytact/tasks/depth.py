@@ -1,6 +1,6 @@
 import math
 
-import intel_extension_for_pytorch as ipex
+import cv2
 import numpy as np
 import scipy
 import torch
@@ -72,29 +72,50 @@ class DepthFromLookup(Task):
     """
 
     def __init__(
-        self, model_path: str, use_cuda=False, mean=None, std=None, optimize=False
+        self,
+        model_path: str,
+        mmpp,
+        scale: float = 1.0,
+        mean=None,
+        std=None,
+        use_cuda=torch.cuda.is_available(),
+        optimize=not torch.cuda.is_available(),
     ):
 
         self.model = Pixel2GradModel()
         self.use_cuda = use_cuda
         self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
         self.model.eval()
+        self.scale = scale
+        self.mpp = mmpp / scale / 1000.0
         if mean is not None and std is not None:
             self.mean = torch.from_numpy(mean).float()
+            self.mean[3:] = self.mean[3:] * scale
             self.std = torch.from_numpy(std).float()
+            self.std[3:] = self.std[3:] * scale
         if self.use_cuda:
             self.model = self.model.cuda()
             if self.mean is not None and self.std is not None:
                 self.mean = self.mean.cuda()
                 self.std = self.std.cuda()
         elif optimize:
+            import intel_extension_for_pytorch as ipex
+
             self.model = ipex.optimize(self.model)
 
     def __call__(self, frame: Frame) -> DepthMap:
         height, width = frame.image.shape[:2]
+        xv, yv = np.meshgrid(
+            np.arange(height),
+            np.arange(width),
+        )
+        height = int(height * self.scale)
+        width = int(width * self.scale)
         batch_len = height * width
-        X = frame.image.reshape((batch_len, 3))
-        xv, yv = np.meshgrid(np.arange(height), np.arange(width))
+        image = cv2.resize(frame.image, (width, height), interpolation=cv2.INTER_AREA)
+        xv = cv2.resize(xv.astype("float32"), (width, height))
+        yv = cv2.resize(yv.astype("float32"), (width, height))
+        X = image.reshape((batch_len, 3))
         X = np.concatenate((X, np.reshape(xv, (batch_len, 1))), axis=1)
         X = np.concatenate((X, np.reshape(yv, (batch_len, 1))), axis=1)
 
@@ -116,7 +137,7 @@ class DepthFromLookup(Task):
             grad[:, :, 0], grad[:, :, 1], np.zeros((height, width))
         )
         dm = np.reshape(dm, (height, width))
-        return DepthMap(dm)
+        return DepthMap(dm * self.mpp)
 
 
 class DepthFromPix2Pix(Task):

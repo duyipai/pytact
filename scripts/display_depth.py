@@ -53,6 +53,8 @@ parser.add_argument(
     dest="device",
     default="cuda" if torch.cuda.is_available() else "cpu",
 )
+parser.add_argument("--scale", type=float, dest="scale", default=1.0)
+parser.add_argument("--mmpp", type=float, dest="mmpp", default=0.0487334006)
 args = parser.parse_args()
 sensor = pytact.sensors.sensor_from_args(args.sensor, **vars(args))
 npzfile = np.load(args.model_path + ".npz")
@@ -60,17 +62,19 @@ mean = npzfile["mean"]
 std = npzfile["std"]
 lookupTable = pytact.tasks.DepthFromLookup(
     args.model_path + ".pth",
-    args.device == "cuda",
-    mean,
-    std,
+    mmpp=args.mmpp,
+    scale=args.scale,
+    mean=mean,
+    std=std,
+    use_cuda=args.device == "cuda",
     optimize=args.device != "cuda",
 )
 diff_max = 255
-depth_range = 50.0
-depth_bias = 10.0
+depth_range = 0.002
+depth_bias = 0.0004
 if args.input_path is None:  # real-time sensor input
     if sensor.is_running():
-        for i in range(100):
+        for i in range(100):  # skip first 100 frames to give sensor time to warm up
             _ = sensor.get_frame()
         sensor.set_reference(sensor.get_frame())
     print("Finished setting reference frame")
@@ -83,7 +87,7 @@ if args.input_path is None:  # real-time sensor input
             cv2.imshow("diff", (np.abs(diff.image) / diff_max * 255.0).astype(np.uint8))
             depth = lookupTable(diff)
             # print("diff min/max:", diff.image.min(), diff.image.max())
-            # print("Depth min/max:", depth.data.min(), depth.data.max())
+            print("Depth min/max:", depth.data.min(), depth.data.max())
             cv2.imshow(
                 "depth",
                 ((depth_bias - depth.data) / depth_range * 255.0).astype(np.uint8),
