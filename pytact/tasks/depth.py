@@ -101,7 +101,9 @@ class DepthFromLookup(Task):
         elif optimize:
             import intel_extension_for_pytorch as ipex
 
+            t = self.model.model_type
             self.model = ipex.optimize(self.model)
+            self.model.model_type = t
 
     def __call__(self, frame: Frame) -> DepthMap:
         height, width = frame.image.shape[:2]
