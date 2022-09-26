@@ -10,9 +10,8 @@ class Pixel2GradModel(nn.Module):
     """
 
     model_type = ModelType.Pixel2Grad
-    dropout_p = 0.05
 
-    def __init__(self, hidden_size=96, dropout_p=0.1, activation=nn.ReLU(inplace=True)):
+    def __init__(self, hidden_size=64, dropout_p=0.1, activation=nn.ReLU(inplace=True)):
         super().__init__()
         self.activation = activation
 
