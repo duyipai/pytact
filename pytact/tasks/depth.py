@@ -102,7 +102,12 @@ class DepthFromLookup(Task):
             import intel_extension_for_pytorch as ipex
 
             t = self.model.model_type
-            self.model = ipex.optimize(self.model)
+            self.model = ipex.optimize(
+                self.model,
+                sample_input=torch.randn(
+                    int(320 * 640 * self.scale * scale), self.model.fc1.in_features
+                ),
+            )
             self.model.model_type = t
 
     def __call__(self, frame: Frame) -> DepthMap:

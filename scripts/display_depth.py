@@ -87,7 +87,7 @@ if args.input_path is None:  # real-time sensor input
             cv2.imshow("diff", (np.abs(diff.image) / diff_max * 255.0).astype(np.uint8))
             depth = lookupTable(diff)
             # print("diff min/max:", diff.image.min(), diff.image.max())
-            print("Depth min/max:", depth.data.min(), depth.data.max())
+            # print("Depth min/max:", depth.data.min(), depth.data.max())
             cv2.imshow(
                 "depth",
                 ((depth_bias - depth.data) / depth_range * 255.0).astype(np.uint8),

@@ -30,8 +30,6 @@ class GelsightR15(Sensor):
         Rate to capture new frames at (default 30.0)
     marker_shape: Tuple[int, int], optional
         Number of marker rows and columns (default (10, 12))
-    diff_intensity: float, optional
-        Amount to scale pixel-wise difference for preprocessing steps (default 3.0)
     marker_block_size: int, optional
     marker_neg_bias: int, optional
     marker_neighborhood_size: int, optional
@@ -46,7 +44,6 @@ class GelsightR15(Sensor):
         [130, 470],
     ]  # TL, TR, BR, BL
     _sample_rate: float = 30.0
-    _diff_intensity: float = 3.0
     _dev = None
     _marker_shape: Tuple[int, int] = (10, 14)  # rows, cols
     _marker_block_size: int = 51
@@ -120,9 +117,7 @@ class GelsightR15(Sensor):
                 if self._ref is None:
                     raise RuntimeError("GelsightR15: unable to copy frame")
 
-            image = (
-                frame.image.astype("float32") - self._ref.image.astype("float32")
-            ) * self._diff_intensity  # use float image now
+            image = frame.image.astype("float32") - self._ref.image.astype("float32")  # use float image now
             return Frame(FrameEnc.DIFF, image)
         else:
             raise UnsupportedModelError("GelsightR15: model not supported: {model}")

@@ -22,7 +22,6 @@ class DigitV2(Sensor):
     """
 
     _encoding = FrameEnc.BGR
-    _diff_intensity: float = 3.0
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -97,9 +96,7 @@ class DigitV2(Sensor):
                 if self._ref is None:
                     raise RuntimeError("Digit: unable to copy frame")
 
-            image = (
-                frame.image.astype("float32") - self._ref.image.astype("float32")
-            ) * self._diff_intensity  # use float image now
+            image = frame.image.astype("float32") - self._ref.image.astype("float32") # use float image now
             return Frame(FrameEnc.DIFF, image)
         else:
             raise UnsupportedModelError(f"Digit: model not supported: {model}")
