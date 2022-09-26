@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     # Initiate model and optimizer
     model = pytact.models.Pixel2GradModel(
-        hidden_size=96, dropout_p=0.1, activation=nn.ReLU(inplace=True)
+        hidden_size=64, dropout_p=0.1, activation=nn.ReLU(inplace=True)
     ).to(device)
     loss_fn = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)

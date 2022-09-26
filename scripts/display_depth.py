@@ -60,8 +60,12 @@ sensor = pytact.sensors.sensor_from_args(args.sensor, **vars(args))
 npzfile = np.load(args.model_path + ".npz")
 mean = npzfile["mean"]
 std = npzfile["std"]
+model = pytact.models.Pixel2GradModel(
+    hidden_size=64, dropout_p=0.1, activation=torch.nn.ReLU(inplace=True)
+).to(args.device)
+model.load_state_dict(torch.load(args.model_path + ".pth"))
 lookupTable = pytact.tasks.DepthFromLookup(
-    args.model_path + ".pth",
+    model=model,
     mmpp=args.mmpp,
     scale=args.scale,
     mean=mean,
@@ -70,8 +74,8 @@ lookupTable = pytact.tasks.DepthFromLookup(
     optimize=args.device != "cuda",
 )
 diff_max = 255
-depth_range = 0.002
-depth_bias = 0.0004
+depth_range = 0.004
+depth_bias = 0.001
 if args.input_path is None:  # real-time sensor input
     if sensor.is_running():
         for i in range(100):  # skip first 100 frames to give sensor time to warm up

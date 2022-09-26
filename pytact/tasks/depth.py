@@ -73,7 +73,7 @@ class DepthFromLookup(Task):
 
     def __init__(
         self,
-        model_path: str,
+        model,
         mmpp,
         scale: float = 1.0,
         mean=None,
@@ -82,9 +82,8 @@ class DepthFromLookup(Task):
         optimize=not torch.cuda.is_available(),
     ):
 
-        self.model = Pixel2GradModel()
+        self.model = model
         self.use_cuda = use_cuda
-        self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
         self.model.eval()
         self.scale = scale
         self.mpp = mmpp / scale / 1000.0
