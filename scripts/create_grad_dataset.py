@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 
 import argparse
-import cv2
-from csv import writer
+import glob
+import math
 import os
+import random
+from csv import writer
+from datetime import datetime as dt
+
+import cv2
 import numpy as np
 import pytact
-from datetime import datetime as dt
-import math
-import random
+
+
+def floatName(filepath):
+    filename = filepath.split("/")[-1]
+    purefilename = int(filename.split(".")[0])
+    return purefilename
+
 
 FIELD_NAMES = ["img_name", "R", "G", "B", "x", "y", "gx", "gy"]
 
@@ -75,12 +84,10 @@ with open(output_file, "w") as f:
     w.writerow(FIELD_NAMES)
 
 # Retrieve stored images
-imgs = [
-    args.input_path + "/" + f
-    for f in sorted(os.listdir(args.input_path))
-    if os.path.isfile(os.path.join(args.input_path, f))
-]
-
+imgs = glob.glob(args.input_path + "/*.jpg")
+imgs.sort(key=lambda x: floatName(x))
+imgs = [f for f in imgs]
+print(imgs)
 # Callback variables
 current_frame = None
 circle = None
@@ -100,9 +107,9 @@ def click_cb(event, x, y, _a, _b):
             int(math.sqrt(x_len * x_len + y_len * y_len) / 2),
         )
 
-        display_frame = current_frame.image.copy()
+        display_frame = current_frame.image.copy() * 3.0
+        display_frame[display_frame < 0.0] *= -1.0
         display_frame[display_frame > 255.0] = 255.0
-        display_frame[display_frame < 0.0] = 0.0
         display_frame = np.uint8(display_frame)
         cv2.circle(
             display_frame,
@@ -141,9 +148,9 @@ while len(imgs) > 0:
     )
 
     # Convert to grayscale and find circles using hough transform
-    display_image = current_frame.image.copy()
+    display_image = current_frame.image.copy() * 3.0
+    display_image[display_image < 0.0] *= -1.0
     display_image[display_image > 255.0] = 255.0
-    display_image[display_image < 0.0] = 0.0
     display_image = np.uint8(display_image)
     grayscale_image = cv2.cvtColor(display_image, cv2.COLOR_BGR2GRAY)
 

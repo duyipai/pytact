@@ -49,7 +49,7 @@ parser.add_argument(
     "--duration",
     type=int,
     dest="duration",
-    default=30,
+    default=60,
     help="Number of seconds to record for",
 )
 args = parser.parse_args()
@@ -63,6 +63,8 @@ if not os.path.exists(args.output):
 sensor = pytact.sensors.sensor_from_args(args.sensor, **vars(args))
 if args.sensor == "DigitV2":
     sensor.set_fps("30fps")
+for i in range(120):
+    sensor.get_frame()
 while sensor.is_running():
     if time.time() - start > args.duration or i > args.count - 1:
         break
@@ -70,5 +72,7 @@ while sensor.is_running():
     frame = sensor.get_frame()
     if frame is not None:
         cv2.imwrite(f"{args.output}/{i}.jpg", frame.image)
+        cv2.imshow("frame", frame.image)
+        cv2.waitKey(1)
         i += 1
 print(f"Saved {i} photos to {args.output}")
