@@ -41,5 +41,6 @@ while sensor.is_running():
     if frame is not None:
         cv2.imshow("display", frame.image)
     if cv2.waitKey(2) == ord("q"):
+        sensor.stop()
         break
 cv2.destroyAllWindows()

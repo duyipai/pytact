@@ -44,7 +44,7 @@ class DigitV2(Sensor):
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None
 
-    def __del__(self):
+    def stop(self):
         if self._sensor is not None:
             self._sensor.disconnect()
 
@@ -96,7 +96,9 @@ class DigitV2(Sensor):
                 if self._ref is None:
                     raise RuntimeError("Digit: unable to copy frame")
 
-            image = frame.image.astype("float32") - self._ref.image.astype("float32") # use float image now
+            image = frame.image.astype("float32") - self._ref.image.astype(
+                "float32"
+            )  # use float image now
             return Frame(FrameEnc.DIFF, image)
         else:
             raise UnsupportedModelError(f"Digit: model not supported: {model}")

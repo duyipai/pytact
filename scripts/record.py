@@ -75,4 +75,5 @@ while sensor.is_running():
         cv2.imshow("frame", frame.image)
         cv2.waitKey(1)
         i += 1
+sensor.stop()
 print(f"Saved {i} photos to {args.output}")

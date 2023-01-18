@@ -1,12 +1,15 @@
-import cv2
+import os
 import threading
-from typing import Tuple, Optional, List
 from copy import deepcopy
+from typing import List, Optional, Tuple
+
+import cv2
 import numpy as np
 from scipy import ndimage
 from scipy.ndimage.filters import maximum_filter, minimum_filter
 
-from pytact.types import ModelType, FrameEnc, Frame, Markers
+from pytact.types import Frame, FrameEnc, Markers, ModelType
+
 from .sensors import Sensor, UnsupportedModelError
 
 
@@ -26,8 +29,6 @@ class GelsightR15(Sensor):
         bottom-right and bottom-left (default frame is left as is).
     encoding: FrameEnc, optional
         Encoding to process frames as (default FrameEnc.BGR)
-    sample_rate: float, optional
-        Rate to capture new frames at (default 30.0)
     marker_shape: Tuple[int, int], optional
         Number of marker rows and columns (default (10, 12))
     marker_block_size: int, optional
@@ -43,8 +44,8 @@ class GelsightR15(Sensor):
         [340, 470],
         [130, 470],
     ]  # TL, TR, BR, BL
-    _sample_rate: float = 30.0
     _dev = None
+    _is_running = False
     _marker_shape: Tuple[int, int] = (10, 14)  # rows, cols
     _marker_block_size: int = 51
     _marker_neg_bias: int = 19
@@ -54,6 +55,7 @@ class GelsightR15(Sensor):
         super().__init__(**kwargs)
         if "url" in kwargs:
             self._dev = cv2.VideoCapture(kwargs["url"])
+
         if "roi" in kwargs:
             self._roi = kwargs["roi"]
         self.output_coords = [
@@ -64,12 +66,19 @@ class GelsightR15(Sensor):
         ]
 
         # Start frame sampling
-        self._is_running: bool = True
         self.has_marker = True
         self._frame: Optional[Frame] = None
         self._ref: Optional[Frame] = None
         if self._dev is not None:
-            threading.Timer(1.0 / self._sample_rate, self._collect_frame).start()
+            self._is_running = True
+            threading.Thread(target=self._collect_frame, args=[]).start()
+            self.lock = threading.Lock()
+
+    def stop(self):
+        print("Sensor exiting...")
+        self.lock.acquire()
+        self._is_running = False
+        self.lock.release()
 
     @property
     def marker_shape(self) -> Tuple[int, int]:
@@ -86,31 +95,36 @@ class GelsightR15(Sensor):
         return deepcopy(self._ref)
 
     def _collect_frame(self):
-        """Runs at predetermined rate to collect frames from the sensor."""
-        ret, frame = self._dev.read()
-        if not ret:
-            self.is_running = False
-            return
+        """Runs at another thread to collect frames from the sensor."""
+        running = self._is_running
+        while running:
+            ret, frame = self._dev.read()
+            if not ret:
+                self._is_running = False
+                return
 
-        # Warp to match ROI
-        if self._roi is not None:
-            M = cv2.getPerspectiveTransform(
-                np.float32(self._roi), np.float32(self.output_coords)
-            )
-            frame = cv2.warpPerspective(frame, M, self._size)
+            # Warp to match ROI
+            if self._roi is not None:
+                M = cv2.getPerspectiveTransform(
+                    np.float32(self._roi), np.float32(self.output_coords)
+                )
+                frame = cv2.warpPerspective(frame, M, self._size)
+            self._frame = Frame(self._encoding, frame)
 
-        self._frame = Frame(self._encoding, frame)
-
-        # Set reference frame if one isn't set
-        if self._ref is None:
-            self._ref = deepcopy(self._frame)
+            # Set reference frame if one isn't set
+            if self._ref is None:
+                self._ref = deepcopy(self._frame)
+            self.lock.acquire()
+            running = self._is_running
+            self.lock.release()
+        print("GelsightR15: thread exiting...")
 
     def get_frame(self) -> Optional[Frame]:
         """Returns frame collected in the last sample."""
         return deepcopy(self._frame)
 
     def is_running(self):
-        return self.is_running
+        return self._is_running
 
     def preprocess_for(self, model: ModelType, frame: Frame) -> Frame:
         if model == ModelType.Pixel2Grad:
