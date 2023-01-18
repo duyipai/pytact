@@ -1,5 +1,5 @@
 sphinx_rtd_theme
-
+scipy
 torch
 digit-interface
 black

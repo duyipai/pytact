@@ -24,9 +24,6 @@ def sensor_from_args(sensor_name: str, **kwargs) -> Sensor:
     """
 
     if sensor_name == "GelsightR15":
-        # if "url" not in kwargs or kwargs["url"] is None:
-        #     raise KeyError("Missing required argument 'url' for GelsightR15")
-
         if "roi" in kwargs and kwargs["roi"] is not None:
 
             def parse_coord(coord: str):
@@ -39,9 +36,8 @@ def sensor_from_args(sensor_name: str, **kwargs) -> Sensor:
                 parse_coord(kwargs["roi"][2]),
                 parse_coord(kwargs["roi"][3]),
             ]
-            return GelsightR15(kwargs["url"], roi=roi)
-        else:
-            return GelsightR15()
+            kwargs["roi"] = roi
+        return GelsightR15(**kwargs)
     elif sensor_name == "DigitV2":
         return DigitV2(**kwargs)
     else:

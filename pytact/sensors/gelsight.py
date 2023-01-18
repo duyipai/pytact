@@ -36,7 +36,7 @@ class GelsightR15(Sensor):
     """
 
     _encoding = FrameEnc.BGR
-    _size: Tuple[int, int] = (120, 160)  # width, height
+    _size: Tuple[int, int] = (160, 120)  # width, height
     _roi: Optional[List[Tuple[int, int]]] = [
         [95, 135],
         [360, 130],
@@ -54,11 +54,13 @@ class GelsightR15(Sensor):
         super().__init__(**kwargs)
         if "url" in kwargs:
             self._dev = cv2.VideoCapture(kwargs["url"])
+        if "roi" in kwargs:
+            self._roi = kwargs["roi"]
         self.output_coords = [
             (0, 0),
-            (self._size[1], 0),
-            (self._size[1], self._size[0]),
-            (0, self._size[0]),
+            (self._size[0], 0),
+            (self._size[0], self._size[1]),
+            (0, self._size[1]),
         ]
 
         # Start frame sampling
@@ -117,7 +119,9 @@ class GelsightR15(Sensor):
                 if self._ref is None:
                     raise RuntimeError("GelsightR15: unable to copy frame")
 
-            image = frame.image.astype("float32") - self._ref.image.astype("float32")  # use float image now
+            image = frame.image.astype("float32") - self._ref.image.astype(
+                "float32"
+            )  # use float image now
             return Frame(FrameEnc.DIFF, image)
         else:
             raise UnsupportedModelError("GelsightR15: model not supported: {model}")
