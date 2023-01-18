@@ -35,11 +35,25 @@ args = parser.parse_args()
 
 sensor = pytact.sensors.sensor_from_args(args.sensor, **vars(args))
 
-cv2.namedWindow("display", cv2.WINDOW_GUI_EXPANDED)
+cv2.namedWindow("raw", cv2.WINDOW_GUI_EXPANDED)
+cv2.namedWindow("markers", cv2.WINDOW_GUI_EXPANDED)
 while sensor.is_running():
     frame = sensor.get_frame()
     if frame is not None:
-        cv2.imshow("display", frame.image)
+        cv2.imshow("raw", frame.image)
+        if sensor.has_marker:
+            markers = sensor.get_markers().markers
+            img = frame.image.copy()
+            for i in range(markers.shape[0]):
+                cv2.circle(
+                    img,
+                    (int(markers[i][0]), int(markers[i][1])),
+                    1,
+                    (0, 0, 255),
+                    -1,
+                )
+            cv2.imshow("markers", img)
+
     if cv2.waitKey(2) == ord("q"):
         sensor.stop()
         break

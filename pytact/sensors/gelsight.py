@@ -37,19 +37,19 @@ class GelsightR15(Sensor):
     """
 
     _encoding = FrameEnc.BGR
-    _size: Tuple[int, int] = (160, 120)  # width, height
+    _size: Tuple[int, int] = (320, 240)  # width, height
     _roi: Optional[List[Tuple[int, int]]] = [
-        [95, 135],
-        [360, 130],
-        [340, 470],
-        [130, 470],
+        [63, 83],
+        [442, 121],
+        [450, 360],
+        [59, 402],
     ]  # TL, TR, BR, BL
     _dev = None
     _is_running = False
     _marker_shape: Tuple[int, int] = (10, 14)  # rows, cols
-    _marker_block_size: int = 51
-    _marker_neg_bias: int = 19
-    _marker_neighborhood_size: int = 33
+    _marker_block_size: int = 23
+    _marker_neg_bias: int = 16
+    _marker_neighborhood_size: int = 25
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

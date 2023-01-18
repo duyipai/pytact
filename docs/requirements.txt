@@ -10,3 +10,4 @@ nox>=2019.11.9
 numpy >= 1.16
 opencv-python
 pyudev
+pandas

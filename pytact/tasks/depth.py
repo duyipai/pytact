@@ -78,8 +78,7 @@ class DepthFromLookup(Task):
         scale: float = 1.0,
         mean=None,
         std=None,
-        use_cuda=torch.cuda.is_available(),
-        optimize=not torch.cuda.is_available(),
+        use_cuda=torch.cuda.is_available()
     ):
 
         self.model = model
@@ -97,18 +96,7 @@ class DepthFromLookup(Task):
             if self.mean is not None and self.std is not None:
                 self.mean = self.mean.cuda()
                 self.std = self.std.cuda()
-        elif optimize:
-            import intel_extension_for_pytorch as ipex
-
-            t = self.model.model_type
-            self.model = ipex.optimize(
-                self.model,
-                sample_input=torch.randn(
-                    int(320 * 640 * self.scale * scale), self.model.fc1.in_features
-                ),
-            )
-            self.model.model_type = t
-
+                
     def __call__(self, frame: Frame) -> DepthMap:
         height, width = frame.image.shape[:2]
         xv, yv = np.meshgrid(

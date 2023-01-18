@@ -71,7 +71,6 @@ lookupTable = pytact.tasks.DepthFromLookup(
     mean=mean,
     std=std,
     use_cuda=args.device == "cuda",
-    optimize=args.device != "cuda",
 )
 diff_max = 255
 depth_range = 0.004
