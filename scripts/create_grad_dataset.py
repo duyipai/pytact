@@ -212,17 +212,14 @@ while len(imgs) > 0:
                 for y in range(current_frame.image.shape[0]):
                     # Discard gradients outside of circle
                     if sensor.has_marker:  # with markers
-                        if gx[y, x] == 0.0 and gy[y, x] == 0.0:
-                            continue
                         if markers[y, x] or init_markers[y, x]:
                             continue
-                    else:  # no marker
-                        if (
-                            gx[y, x] == 0.0
-                            and gy[y, x] == 0.0
-                            and random.random() > args.amt_empty
-                        ):
-                            continue
+                    if (
+                        gx[y, x] == 0.0
+                        and gy[y, x] == 0.0
+                        and random.random() > args.amt_empty
+                    ):
+                        continue
 
                     r = current_frame.image[y, x, 0]
                     g = current_frame.image[y, x, 1]
@@ -248,23 +245,6 @@ while len(imgs) > 0:
     # Move to next image
     imgs = imgs[1:]
 
-if sensor.has_marker:
-    # Repeat for zero gradients
-    labels = []
-    repeat = (
-        int(
-            args.amt_empty
-            * float(total_pixels)
-            / current_frame.image.shape[0]
-            / current_frame.image.shape[1]
-        )
-        + 1
-    )
-    print("Will repeat zero gradient for " + str(repeat) + " times the whole image.")
-    for i in range(repeat):
-        for x in range(current_frame.image.shape[1]):
-            for y in range(current_frame.image.shape[0]):
-                labels.append(("empty", 0.0, 0.0, 0.0, x, y, 0.0, 0.0))
 with open(output_file, "a", newline="") as f:
     print(f"Writing {len(labels)} labels to {output_file}")
     w = writer(f)
